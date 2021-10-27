@@ -1,0 +1,4 @@
+venv/
+pip_library/
+.idea/
+temp/

@@ -1,0 +1,10 @@
+gensim
+matplotlib
+numpy
+setuptools
+sklearn
+spacy
+streamlit
+requests
+os
+tarfile
