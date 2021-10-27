@@ -13,7 +13,5 @@ def download_model():
         tar = tarfile.open(filename, 'r:gz')
         tar.extractall()
         tar.close()
-    else:
-        print(f"Model found in cache")
 
     return filename

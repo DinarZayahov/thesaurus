@@ -1,10 +1,10 @@
 from downloads import download_model
 import spacy
-from gensim.utils import tokenize
 import streamlit as st
-from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
+from gensim.utils import tokenize
+from sklearn.manifold import TSNE
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 st.title("Welcome to Thesaurus Visualization")
@@ -44,13 +44,12 @@ def func(text):
 
 
 def main():
-    text = st.sidebar.file_uploader("Please Select to Upload a file with text", type=['txt'])
-    background = open('../temp/background.txt', 'r')
+    text = st.sidebar.file_uploader("Please select a file with the text you want to visualize", type=['txt'], key=1)
+    background = st.sidebar.file_uploader("Please select a file with the text for the background", type=['txt'], key=2)
 
-    ft1, e1 = func(background)
+    if (text is not None) and (background is not None):
 
-    if text is not None:
-
+        ft1, e1 = func(background)
         ft2, e2 = func(text)
 
         tsne = TSNE(n_components=2, random_state=0)

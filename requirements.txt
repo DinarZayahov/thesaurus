@@ -1,10 +1,9 @@
-gensim
-matplotlib
-numpy
-setuptools
-sklearn
 spacy
 streamlit
+numpy
+matplotlib
+gensim
+sklearn
 requests
 os
 tarfile
