@@ -5,5 +5,4 @@ matplotlib
 gensim
 sklearn
 requests
-os
 tarfile

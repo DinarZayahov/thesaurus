@@ -1,3 +1,3 @@
-# How to run
+# How to run web app
 
-``streamlit run main.py``
+``streamlit run app.py``
