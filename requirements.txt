@@ -6,3 +6,5 @@ gensim
 sklearn
 requests
 tarfile
+plotly
+pandas
