@@ -1,4 +1,4 @@
-spacy
+spacy==3.0.5
 streamlit
 numpy
 matplotlib

@@ -12,8 +12,12 @@ class Thesaurus:
         self.spacy_model = None
 
     @staticmethod
-    def read_text(text_corpus):
-        return ''.join(str(x) for x in text_corpus.read().splitlines())
+    def read_text(file):
+        lines = []
+        for line in file:
+            line = line.decode('utf-8', 'ignore')
+            lines.append(line)
+        return ''.join(lines)
 
     def set_spacy_model(self, model):
         self.spacy_model = spacy.load(model)
@@ -52,7 +56,7 @@ class Thesaurus:
 
     @staticmethod
     def apply_tsne(embeddings):
-        tsne = TSNE(n_components=2, random_state=0)
+        tsne = TSNE(random_state=0)
         np.set_printoptions(suppress=True)
         y = tsne.fit_transform(embeddings)
         return y
@@ -69,7 +73,7 @@ class Thesaurus:
 
     @staticmethod
     def plot_plotly(df):
-        fig = px.scatter(df, x="x", y="y", size='counts', hover_data=['words'])
+        fig = px.scatter(df, x="x", y="y", color='color', size='counts', hover_data=['words'])
         fig.update_traces(marker=dict(
             size=df['counts'],
             sizemode='area',
@@ -78,14 +82,27 @@ class Thesaurus:
         return fig
 
     @staticmethod
-    def make_dataframe(filtered_tokens, filtered_tokens_set, y):
+    def make_dataframe(filtered_tokens, filtered_tokens_set, y, type_):
         tokens_list = list(filtered_tokens_set)
+
         counts = []
         for token in tokens_list:
             c = filtered_tokens.count(token)
             counts.append(c)
 
-        d = {'x': y[:, 0], 'y': y[:, 1], 'words': tokens_list, 'counts': counts}
+        if type_ == 'foreground':
+            color = 'blue'
+        else:
+            color = 'orange'
+
+        d = {'x': y[:, 0], 'y': y[:, 1], 'words': tokens_list, 'counts': counts, 'color': color}
 
         df = pd.DataFrame(data=d)
+
         return df
+
+    @staticmethod
+    def join_dataframes(df1, df2):
+        res = df1.append(df2, ignore_index=True)
+        res.to_csv('res.csv')
+        return res
