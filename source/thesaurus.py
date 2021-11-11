@@ -46,9 +46,9 @@ class Thesaurus:
         for token in tokens:
             if token not in stopwords:
                 filtered_tokens.append(token)
-        return filtered_tokens, set(filtered_tokens)
+        return filtered_tokens, list(set(filtered_tokens))
 
-    def get_embeddings(self, tokens: set) -> list:
+    def get_embeddings(self, tokens: list) -> list:
         embeddings = []
         for token in tokens:
             embeddings.append(self.spacy_model(token).vector)
@@ -60,6 +60,18 @@ class Thesaurus:
         np.set_printoptions(suppress=True)
         y = tsne.fit_transform(embeddings)
         return y
+
+    # might be done better
+    def foreground_transform(self, filtered_tokens_f_set, filtered_tokens_b_set, y_b):
+        y_f = []
+        for filtered_token_f_set in filtered_tokens_f_set:
+            if filtered_token_f_set in filtered_tokens_b_set:
+                i = filtered_tokens_b_set.index(filtered_token_f_set)
+                y_f.append(y_b[i])
+            else:
+                el = self.apply_tsne(self.get_embeddings(filtered_token_f_set))
+                y_f.append(el[0])
+        return y_f
 
     @staticmethod
     def plot_pyplot(y1, y2, ft2):
@@ -73,12 +85,10 @@ class Thesaurus:
 
     @staticmethod
     def plot_plotly(df):
-        fig = px.scatter(df, x="x", y="y", color='color', size='counts', hover_data=['words'])
-        fig.update_traces(marker=dict(
-            size=df['counts'],
-            sizemode='area',
-            sizeref=2. * max(df['counts']) / (30. ** 2),
-            sizemin=4))
+        fig = px.scatter(df, x="x", y="y", color='set', size='size',
+                         hover_data={'x': False, 'y': False,
+                                     'words': True, 'counts': True, 'set': False, 'size': False},
+                         color_discrete_sequence=["orange", "blue"])
         return fig
 
     @staticmethod
@@ -90,12 +100,7 @@ class Thesaurus:
             c = filtered_tokens.count(token)
             counts.append(c)
 
-        if type_ == 'foreground':
-            color = 'blue'
-        else:
-            color = 'orange'
-
-        d = {'x': y[:, 0], 'y': y[:, 1], 'words': tokens_list, 'counts': counts, 'color': color}
+        d = {'x': y[:, 0], 'y': y[:, 1], 'words': tokens_list, 'counts': counts, 'set': type_}
 
         df = pd.DataFrame(data=d)
 
@@ -104,5 +109,6 @@ class Thesaurus:
     @staticmethod
     def join_dataframes(df1, df2):
         res = df1.append(df2, ignore_index=True)
+        res['size'] = np.where(res['set'] == 'foreground', res['counts'], res['counts']+1)
         res.to_csv('res.csv')
         return res

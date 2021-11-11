@@ -3,6 +3,7 @@ import streamlit as st
 from downloads import download_model
 from thesaurus import Thesaurus
 from io import StringIO, BytesIO
+import numpy as np
 
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -37,22 +38,18 @@ if (foreground is not None) and (background is not None):
     embeddings_f = obj.get_embeddings(filtered_tokens_f_set)
     embeddings_b = obj.get_embeddings(filtered_tokens_b_set)
 
-    y_f = obj.apply_tsne(embeddings_f)
     y_b = obj.apply_tsne(embeddings_b)
+    y_f = obj.foreground_transform(filtered_tokens_f_set, filtered_tokens_b_set, y_b)
 
     # fig = obj.plot_pyplot(y_f, y_b, filtered_tokens_b_set)
 
-    df1 = obj.make_dataframe(filtered_tokens_f, filtered_tokens_f_set, y_f, 'foreground')
+    df1 = obj.make_dataframe(filtered_tokens_f, filtered_tokens_f_set, np.array(y_f), 'foreground')
     df2 = obj.make_dataframe(filtered_tokens_b, filtered_tokens_b_set, y_b, 'background')
-    df = obj.join_dataframes(df1, df2)
+    df = obj.join_dataframes(df2, df1)
     fig = obj.plot_plotly(df)
-
-    # fig = obj.plot_plotly(df1)
-    # fig2 = obj.plot_plotly(df2)
 
     if fig is not None:
         st.plotly_chart(fig)
-        # st.plotly_chart(fig2)
 
         # downloading
         mybuff = StringIO()
