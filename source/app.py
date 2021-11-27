@@ -35,17 +35,26 @@ if (foreground is not None) and (background is not None):
     filtered_tokens_f, filtered_tokens_f_set = obj.remove_stopwords(tokenized_f)
     filtered_tokens_b, filtered_tokens_b_set = obj.remove_stopwords(tokenized_b)
 
-    embeddings_f = obj.get_embeddings(filtered_tokens_f_set)
-    embeddings_b = obj.get_embeddings(filtered_tokens_b_set)
+    # embeddings_f = obj.get_embeddings(filtered_tokens_f_set)
+    # embeddings_b = obj.get_embeddings(filtered_tokens_b_set)
+    # y_b = obj.apply_tsne(embeddings_b)
+    # y_f = obj.foreground_transform(filtered_tokens_f_set, filtered_tokens_b_set, y_b)
 
-    y_b = obj.apply_tsne(embeddings_b)
-    y_f = obj.foreground_transform(filtered_tokens_f_set, filtered_tokens_b_set, y_b)
+    tokens_set = set(filtered_tokens_b_set).union(set(filtered_tokens_f_set))
+
+    embeddings = obj.make_embeddings(list(tokens_set))
+
+    y = obj.apply_umap(embeddings)
+
+    y_b = obj.get_embeddings(embeddings, list(tokens_set), filtered_tokens_b_set)
+    y_f = obj.get_embeddings(embeddings, list(tokens_set), filtered_tokens_f_set)
 
     # fig = obj.plot_pyplot(y_f, y_b, filtered_tokens_b_set)
 
     df1 = obj.make_dataframe(filtered_tokens_f, filtered_tokens_f_set, np.array(y_f), 'foreground')
-    df2 = obj.make_dataframe(filtered_tokens_b, filtered_tokens_b_set, y_b, 'background')
+    df2 = obj.make_dataframe(filtered_tokens_b, filtered_tokens_b_set, np.array(y_b), 'background')
     df = obj.join_dataframes(df2, df1)
+    df = obj.add_size(df)
     fig = obj.plot_plotly(df)
 
     if fig is not None:
