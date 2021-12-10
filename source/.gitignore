@@ -9,3 +9,5 @@ experiment.py
 res.csv
 
 stats.py
+
+embeddings.pickle

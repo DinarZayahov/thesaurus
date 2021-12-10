@@ -7,6 +7,9 @@ from gensim.utils import tokenize
 from sklearn.manifold import TSNE
 from umap import UMAP
 import time
+import pickle
+import os
+from collections import Counter
 
 
 class Thesaurus:
@@ -25,10 +28,15 @@ class Thesaurus:
         self.spacy_model = spacy.load(model)
         self.spacy_model.max_length = 1250000
 
-    def lemmatize(self, text):
-        doc = self.spacy_model(text)
-        result = " ".join([token.lemma_ for token in doc])
-        return result
+    def lemmatize(self, text, length):
+        if length < 500000:
+            doc = self.spacy_model(text)
+            result = " ".join([token.lemma_ for token in doc])
+            return result
+        else:
+            for doc in self.spacy_model.pipe([text], batch_size=32, n_process=3, disable=["parser", "ner"]):
+                result = " ".join([token.lemma_ for token in doc])
+                return result
 
     @staticmethod
     def tokenize(text):
@@ -52,10 +60,36 @@ class Thesaurus:
         return filtered_tokens, list(set(filtered_tokens))
 
     def make_embeddings(self, tokens: list) -> list:
-        embeddings = []
-        for token in tokens:
-            embeddings.append(self.spacy_model(token).vector)
-        return embeddings
+        embeddings_filename = 'embeddings.pickle'
+        if os.path.exists(embeddings_filename):
+            print('Found cache..')
+            embeddings_file = open(embeddings_filename, 'rb')
+            changed = False
+            dictionary = pickle.load(embeddings_file)
+            result = []
+            for token in tokens:
+                if token in dictionary:
+                    result.append(dictionary[token])
+                else:
+                    e = self.spacy_model(token).vector
+                    dictionary[token] = e
+                    changed = True
+                    result.append(e)
+            if changed:
+                print('Rewriting cache..')
+                embeddings_file.close()
+                os.remove(embeddings_filename)
+                new_embeddings_file = open(embeddings_filename, 'wb')
+                pickle.dump(dictionary, new_embeddings_file)
+            return result
+        else:
+            print('Cache not found..')
+            dictionary = dict()
+            for token in tokens:
+                dictionary[token] = self.spacy_model(token).vector
+            embeddings_file = open(embeddings_filename, 'wb')
+            pickle.dump(dictionary, embeddings_file)
+            return list(dictionary.values())
 
     @staticmethod
     def get_embeddings(embeds, u_s, s):
@@ -110,11 +144,12 @@ class Thesaurus:
 
     @staticmethod
     def make_dataframe(filtered_tokens, filtered_tokens_set, y, type_):
+        counter = Counter(filtered_tokens)
         tokens_list = list(filtered_tokens_set)
 
         counts = []
         for token in tokens_list:
-            c = filtered_tokens.count(token)
+            c = counter[token]
             counts.append(c)
 
         d = {'x': y[:, 0], 'y': y[:, 1], 'words': tokens_list, 'counts': counts, 'set': type_}
@@ -135,12 +170,75 @@ class Thesaurus:
         df.to_csv('res.csv')
         return df
 
-    def stats(self, file):
+    def stats1(self, file):
 
         start = time.time()
         orig_text = self.read_text(file)
         end = time.time()
         print("4MB file reading time {:0.2f}".format(end-start))  # little
+
+        start = time.time()
+        self.set_spacy_model('en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0')
+        end = time.time()
+        print("model setting time {:0.2f}".format(end - start))  # 1.5 seconds
+
+        limits = [10500, 57000, 175000, 450000, 1150000]
+        # 1k, 5k, 15k, 25k, 45k, 90k
+
+        limit = limits[1]
+        text = orig_text[:limit]
+        print(len(text))
+
+        start = time.time()
+        lemmatized_text = self.lemmatize(text, len(text))
+        end = time.time()
+        print("lemmatization time {:0.2f}".format(end-start))
+
+        start = time.time()
+        tokenized_text = self.tokenize(lemmatized_text)
+        end = time.time()
+        print("tokenization time {:0.2f}".format(end-start))  # little
+
+        start = time.time()
+        filtered_text, filtered_text_set = self.remove_stopwords(tokenized_text)
+        end = time.time()
+        print("removing stopwords time {:0.2f}".format(end-start))  # little
+
+        start = time.time()
+        embeddings = self.make_embeddings(list(filtered_text_set))
+        end = time.time()
+        print("making embeddings time {:0.2f}".format(end-start))
+
+        start = time.time()
+        y = self.apply_umap(embeddings)
+        # y = self.apply_tsne(embeddings)
+        end = time.time()
+        print("UMAP time {:0.2f}".format(end-start))
+        # print("t-SNE time {:0.2f}".format(end - start))
+
+        start = time.time()
+        df = self.make_dataframe(filtered_text, filtered_text_set, np.array(y), 'foreground')
+        end = time.time()
+        print("making dataframe time {:0.2f}".format(end-start))
+
+        start = time.time()
+        df = self.add_size(df)
+        end = time.time()
+        print("adding size column time {:0.2f}".format(end-start))  # little
+
+        start = time.time()
+        fig = self.plot_plotly(df)
+        end = time.time()
+        print("making plot time {:0.2f}".format(end-start))  # ~3 seconds
+
+        fig.show()
+
+    def stats2(self, file):
+
+        start = time.time()
+        orig_text = self.read_text(file)
+        end = time.time()
+        print("4MB file reading time {:0.2f}".format(end - start))  # little
 
         start = time.time()
         self.set_spacy_model('en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0')
@@ -158,52 +256,34 @@ class Thesaurus:
             text = orig_text[:limit]
 
             start = time.time()
-            lemmatized_text = self.lemmatize(text)
+            lemmatized_text = self.lemmatize(text, len(text))
             end = time.time()
-            # print("lemmatization time {:0.2f}".format(end-start))
-            results['lemmatization'].append(end-start)
+            results['lemmatization'].append(end - start)
 
             # start = time.time()
             tokenized_text = self.tokenize(lemmatized_text)
             # end = time.time()
-            # print("tokenization time {:0.2f}".format(end-start))  # little
             results['words'].append(len(tokenized_text))
 
             # start = time.time()
             filtered_text, filtered_text_set = self.remove_stopwords(tokenized_text)
             # end = time.time()
-            # print("removing stopwords time {:0.2f}".format(end-start)) # little
             results['unique_words'].append(len(filtered_text_set))
 
             start = time.time()
             embeddings = self.make_embeddings(list(filtered_text_set))
             end = time.time()
-            # print("making embeddings time {:0.2f}".format(end-start))
-            results['embeddings'].append(end-start)
+            results['embeddings'].append(end - start)
 
             start = time.time()
             y = self.apply_umap(embeddings)
             end = time.time()
-            # print("UMAP time {:0.2f}".format(end-start))
-            results['umap'].append(end-start)
+            results['umap'].append(end - start)
 
             start = time.time()
-            df = self.make_dataframe(filtered_text, filtered_text_set, np.array(y), 'foreground')
+            _ = self.make_dataframe(filtered_text, filtered_text_set, np.array(y), 'foreground')
             end = time.time()
-            # print("making dataframe time {:0.2f}".format(end-start))
-            results['df'].append(end-start)
-
-            # start = time.time()
-            # df = self.add_size(df)
-            # end = time.time()
-            # print("adding size column time {:0.2f}".format(end-start)) # little
-            #
-            # start = time.time()
-            # fig = self.plot_plotly(df)
-            # end = time.time()
-            # print("making plot time {:0.2f}".format(end-start)) # ~3 seconds
-            #
-            # # fig.show()
+            results['df'].append(end - start)
 
         axs[0, 0].plot(results['words'], results['lemmatization'], 'ro')
         axs[0, 0].set_title('Lemmatization time')
