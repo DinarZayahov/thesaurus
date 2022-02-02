@@ -1,11 +1,12 @@
-spacy==3.0.5
+spacy>=3.0.5
 streamlit
 numpy
 matplotlib
 gensim
 sklearn
 requests
-tarfile
 plotly
 pandas
 umap
+bokeh==2.2.2
+minisom

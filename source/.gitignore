@@ -11,3 +11,7 @@ res.csv
 stats.py
 
 embeddings.pickle
+
+embeds1.pickle
+embeds2.pickle
+words.pickle

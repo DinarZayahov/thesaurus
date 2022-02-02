@@ -1,9 +1,8 @@
-import base64
 import streamlit as st
 from downloads import download_model
 from thesaurus import Thesaurus
-from io import StringIO, BytesIO
-import numpy as np
+
+MODEL = 'en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0'
 
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -22,11 +21,11 @@ if (foreground is not None) and (background is not None):
     foreground = obj.read_text(foreground)
     background = obj.read_text(background)
 
-    obj.set_spacy_model('en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0')
+    obj.set_spacy_model(MODEL)
 
-    lemmatized_f = obj.lemmatize(foreground)
+    lemmatized_f = obj.lemmatize(foreground, len(foreground))
 
-    lemmatized_b = obj.lemmatize(background)
+    lemmatized_b = obj.lemmatize(background, len(background))
 
     tokenized_f = obj.tokenize(lemmatized_f)
 
@@ -35,37 +34,9 @@ if (foreground is not None) and (background is not None):
     filtered_tokens_f, filtered_tokens_f_set = obj.remove_stopwords(tokenized_f)
     filtered_tokens_b, filtered_tokens_b_set = obj.remove_stopwords(tokenized_b)
 
-    # embeddings_f = obj.get_embeddings(filtered_tokens_f_set)
-    # embeddings_b = obj.get_embeddings(filtered_tokens_b_set)
-    # y_b = obj.apply_tsne(embeddings_b)
-    # y_f = obj.foreground_transform(filtered_tokens_f_set, filtered_tokens_b_set, y_b)
+    embeddings_f = obj.make_embeddings(filtered_tokens_f_set)
+    embeddings_b = obj.make_embeddings(filtered_tokens_b_set)
 
-    tokens_set = set(filtered_tokens_b_set).union(set(filtered_tokens_f_set))
+    fig = obj.plot_bokeh(embeddings_f, embeddings_b, filtered_tokens_f_set, filtered_tokens_b_set)
 
-    embeddings = obj.make_embeddings(list(tokens_set))
-
-    y = obj.apply_umap(embeddings)
-
-    y_b = obj.get_embeddings(embeddings, list(tokens_set), filtered_tokens_b_set)
-    y_f = obj.get_embeddings(embeddings, list(tokens_set), filtered_tokens_f_set)
-
-    # fig = obj.plot_pyplot(y_f, y_b, filtered_tokens_b_set)
-
-    df1 = obj.make_dataframe(filtered_tokens_f, filtered_tokens_f_set, np.array(y_f), 'foreground')
-    df2 = obj.make_dataframe(filtered_tokens_b, filtered_tokens_b_set, np.array(y_b), 'background')
-    df = obj.join_dataframes(df2, df1)
-    df = obj.add_size(df)
-    fig = obj.plot_plotly(df)
-
-    if fig is not None:
-        st.plotly_chart(fig)
-
-        # downloading
-        mybuff = StringIO()
-        fig.write_html(mybuff, include_plotlyjs='cdn')
-        mybuff = BytesIO(mybuff.getvalue().encode())
-        b64 = base64.b64encode(mybuff.read()).decode()
-        href = f'<a href="data:text/html;charset=utf-8;base64, {b64}" download="plot.html">Download plot</a>'
-        st.markdown(href, unsafe_allow_html=True)
-    else:
-        st.pyplot()
+    st.bokeh_chart(fig)

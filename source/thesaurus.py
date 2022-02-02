@@ -2,14 +2,24 @@ import spacy
 import numpy as np
 import matplotlib.pyplot as plt
 import plotly.express as px
+from plotly.subplots import make_subplots
 import pandas as pd
 from gensim.utils import tokenize
 from sklearn.manifold import TSNE
-from umap import UMAP
+from umap import UMAP  # 0.4.2
 import time
 import pickle
 import os
 from collections import Counter
+from minisom import MiniSom
+
+from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.plotting import figure
+
+
+MAX_LENGTH = 1250000
+LEMMATIZATION_THRESHOLD = 500000
+MODEL = 'en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0'
 
 
 class Thesaurus:
@@ -26,10 +36,10 @@ class Thesaurus:
 
     def set_spacy_model(self, model):
         self.spacy_model = spacy.load(model)
-        self.spacy_model.max_length = 1250000
+        self.spacy_model.max_length = MAX_LENGTH
 
     def lemmatize(self, text, length):
-        if length < 500000:
+        if length < LEMMATIZATION_THRESHOLD:
             doc = self.spacy_model(text)
             result = " ".join([token.lemma_ for token in doc])
             return result
@@ -57,7 +67,7 @@ class Thesaurus:
         for token in tokens:
             if token not in stopwords:
                 filtered_tokens.append(token)
-        return filtered_tokens, list(set(filtered_tokens))
+        return filtered_tokens, list(dict.fromkeys(filtered_tokens))
 
     def make_embeddings(self, tokens: list) -> list:
         embeddings_filename = 'embeddings.pickle'
@@ -101,14 +111,14 @@ class Thesaurus:
 
     @staticmethod
     def apply_tsne(embeddings):
-        tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=3000, metric='cosine', random_state=0)
+        tsne = TSNE(n_components=2, verbose=0, perplexity=30, n_iter=300, metric='manhattan', random_state=0)
         np.set_printoptions(suppress=True)
         y = tsne.fit_transform(embeddings)
         return y
 
     @staticmethod
     def apply_umap(embeddings):
-        umap = UMAP(n_components=2, init='spectral', random_state=42)
+        umap = UMAP(n_components=2, metric='euclidean', random_state=42, densmap=True)
         y = umap.fit_transform(embeddings)
         return y
 
@@ -145,7 +155,7 @@ class Thesaurus:
     @staticmethod
     def make_dataframe(filtered_tokens, filtered_tokens_set, y, type_):
         counter = Counter(filtered_tokens)
-        tokens_list = list(filtered_tokens_set)
+        tokens_list = filtered_tokens_set
 
         counts = []
         for token in tokens_list:
@@ -166,10 +176,105 @@ class Thesaurus:
 
     @staticmethod
     def add_size(df):
-        df['size'] = np.where(df['set'] == 'foreground', df['counts'], df['counts']+1)
+        df['size'] = np.where(df['set'] == 'foreground', df['counts'], df['counts'])
+        # df['size'] = np.where(df['set'] == 'foreground', df['counts'], df['counts']+1) # to make background larger
         df.to_csv('res.csv')
         return df
 
+    @staticmethod
+    def get_grid_size(n):
+        neurons_num = 5*np.sqrt(n)
+        return int(np.ceil(np.sqrt(neurons_num)))
+
+    def plot_bokeh(self, embeddings_f, embeddings_b, filtered_ftext_set, filtered_btext_set):
+        HEXAGON_SIZE = 54
+        DOT_SIZE = 20
+
+        GRID_SIZE = self.get_grid_size(len(embeddings_b))
+        PLOT_SIZE = HEXAGON_SIZE * (GRID_SIZE + 1)
+
+        som = MiniSom(GRID_SIZE, GRID_SIZE, np.array(embeddings_b).shape[1], sigma=5, learning_rate=.2,
+                      activation_distance='euclidean', topology='hexagonal', neighborhood_function='bubble',
+                      random_seed=10)
+
+        som.train(embeddings_b, 1000, verbose=True)
+
+        b_label = []
+
+        b_weight_x, b_weight_y = [], []
+        for cnt, i in enumerate(embeddings_b):
+            w = som.winner(i)
+            wx, wy = som.convert_map_to_euclidean(xy=w)
+            wy = wy * np.sqrt(3) / 2
+            b_weight_x.append(wx)
+            b_weight_y.append(wy)
+            b_label.append(filtered_btext_set[cnt])
+
+        f_label = []
+
+        f_weight_x, f_weight_y = [], []
+        for cnt, i in enumerate(embeddings_f):
+            w = som.winner(i)
+            wx, wy = som.convert_map_to_euclidean(xy=w)
+            wy = wy * np.sqrt(3) / 2
+            f_weight_x.append(wx)
+            f_weight_y.append(wy)
+            f_label.append(filtered_ftext_set[cnt])
+
+        # initialise figure/plot
+        fig = figure(plot_height=PLOT_SIZE, plot_width=PLOT_SIZE,
+                     match_aspect=True,
+                     tools="pan")
+
+        fig.axis.visible = False
+        fig.xgrid.grid_line_color = None
+        fig.ygrid.grid_line_color = None
+
+        # create data stream for plotting
+        b_source_pages = ColumnDataSource(
+            data=dict(
+                wx=b_weight_x,
+                wy=b_weight_y,
+                species=b_label
+            )
+        )
+
+        f_source_pages = ColumnDataSource(
+            data=dict(
+                wx=f_weight_x,
+                wy=f_weight_y,
+                species=f_label
+            )
+        )
+
+        fig.hex(x='wy', y='wx', source=b_source_pages,
+                fill_alpha=1.0, line_alpha=1.0,
+                size=HEXAGON_SIZE)
+
+        fig.scatter(x='wy', y='wx', source=f_source_pages,
+                    fill_color='orange',
+                    size=DOT_SIZE)
+
+        TOOLTIPS = """
+            <div style ="border-style: solid;border-width: 15px;background-color:black;">         
+                <div>
+                    <span style="font-size: 12px; color: white;font-family:century gothic;"> @species</span>
+                </div>
+            </div>
+            """
+
+        # add hover-over tooltip
+        fig.add_tools(HoverTool(
+            tooltips=[
+                ("label", '@species')],
+            # tooltips=TOOLTIPS,
+            mode="mouse",
+            point_policy="follow_mouse"
+        ))
+
+        return fig
+
+    # one graph experiment
     def stats1(self, file):
 
         start = time.time()
@@ -178,14 +283,14 @@ class Thesaurus:
         print("4MB file reading time {:0.2f}".format(end-start))  # little
 
         start = time.time()
-        self.set_spacy_model('en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0')
+        self.set_spacy_model(MODEL)
         end = time.time()
         print("model setting time {:0.2f}".format(end - start))  # 1.5 seconds
 
         limits = [10500, 57000, 175000, 450000, 1150000]
         # 1k, 5k, 15k, 25k, 45k, 90k
 
-        limit = limits[1]
+        limit = limits[0]
         text = orig_text[:limit]
         print(len(text))
 
@@ -204,35 +309,74 @@ class Thesaurus:
         end = time.time()
         print("removing stopwords time {:0.2f}".format(end-start))  # little
 
+        fw = open('words.pickle', 'wb')
+        pickle.dump(filtered_text_set, fw)
+
         start = time.time()
-        embeddings = self.make_embeddings(list(filtered_text_set))
+        embeddings = self.make_embeddings(filtered_text_set)
         end = time.time()
         print("making embeddings time {:0.2f}".format(end-start))
 
-        start = time.time()
-        y = self.apply_umap(embeddings)
-        # y = self.apply_tsne(embeddings)
-        end = time.time()
-        print("UMAP time {:0.2f}".format(end-start))
-        # print("t-SNE time {:0.2f}".format(end - start))
+        HEXAGON_SIZE = 54
+        DOT_SIZE = 20
 
-        start = time.time()
-        df = self.make_dataframe(filtered_text, filtered_text_set, np.array(y), 'foreground')
-        end = time.time()
-        print("making dataframe time {:0.2f}".format(end-start))
+        GRID_SIZE = self.get_grid_size(len(embeddings))
+        PLOT_SIZE = HEXAGON_SIZE * (GRID_SIZE+1)
 
-        start = time.time()
-        df = self.add_size(df)
-        end = time.time()
-        print("adding size column time {:0.2f}".format(end-start))  # little
+        som = MiniSom(GRID_SIZE, GRID_SIZE, np.array(embeddings).shape[1], sigma=5, learning_rate=.2,
+                      activation_distance='euclidean', topology='hexagonal', neighborhood_function='bubble',
+                      random_seed=10)
 
-        start = time.time()
-        fig = self.plot_plotly(df)
-        end = time.time()
-        print("making plot time {:0.2f}".format(end-start))  # ~3 seconds
+        som.train(embeddings, 1000, verbose=True)
 
-        fig.show()
+        label = []
 
+        weight_x, weight_y = [], []
+        for cnt, i in enumerate(embeddings):
+            w = som.winner(i)
+            wx, wy = som.convert_map_to_euclidean(xy=w)
+            wy = wy * np.sqrt(3) / 2
+            weight_x.append(wx)
+            weight_y.append(wy)
+            label.append(filtered_text_set[cnt])
+
+        # initialise figure/plot
+        fig = figure(plot_height=PLOT_SIZE, plot_width=PLOT_SIZE,
+                     match_aspect=True,
+                     tools="pan")
+
+        fig.axis.visible = False
+        fig.xgrid.grid_line_color = None
+        fig.ygrid.grid_line_color = None
+
+        # create data stream for plotting
+        source_pages = ColumnDataSource(
+            data=dict(
+                wx=weight_x,
+                wy=weight_y,
+                species=label
+            )
+        )
+
+        fig.hex(x='wy', y='wx', source=source_pages,
+                fill_alpha=1.0, line_alpha=1.0,
+                size=HEXAGON_SIZE)
+
+        fig.scatter(x='wy', y='wx', source=source_pages,
+                    fill_color='orange',
+                    size=DOT_SIZE)
+
+        # add hover-over tooltip
+        fig.add_tools(HoverTool(
+            tooltips=[
+                ("label", '@species')],
+            mode="mouse",
+            point_policy="follow_mouse"
+        ))
+
+        return fig
+
+    # for time-statistics
     def stats2(self, file):
 
         start = time.time()
@@ -271,7 +415,7 @@ class Thesaurus:
             results['unique_words'].append(len(filtered_text_set))
 
             start = time.time()
-            embeddings = self.make_embeddings(list(filtered_text_set))
+            embeddings = self.make_embeddings(filtered_text_set)
             end = time.time()
             results['embeddings'].append(end - start)
 
@@ -308,3 +452,103 @@ class Thesaurus:
         fig.tight_layout()
 
         plt.show()
+
+    # to experiment with UMAP-parameters
+    def stats3(self, file):
+
+        # array = ['euclidean', 'manhattan', 'chebyshev', 'minkowski', 'canberra', 'braycurtis', 'mahalanobis',
+        #          'wminkowski', 'cosine', 'correlation', 'hamming', 'jaccard', 'dice', 'kulsinski', 'rogerstanimoto',
+        #          'sokalmichener', 'sokalsneath', 'yule']
+
+        array = [2, 5, 10, 20, 50, 100, 200, 400]
+        new_array = array
+        n = len(new_array)
+
+        start = time.time()
+        orig_text = self.read_text(file)
+        end = time.time()
+        print("4MB file reading time {:0.2f}".format(end - start))  # little
+
+        start = time.time()
+        self.set_spacy_model('en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0')
+        end = time.time()
+        print("model setting time {:0.2f}".format(end - start))  # 1.5 seconds
+
+        limits = [10500, 57000, 175000, 450000, 1150000]
+        # 1k, 5k, 15k, 25k, 45k, 90k
+
+        limit = limits[0]
+        text = orig_text[:limit]
+
+        figs = []
+
+        for value in new_array:
+
+            try:
+                start = time.time()
+                lemmatized_text = self.lemmatize(text, len(text))
+                end = time.time()
+                print("lemmatization time {:0.2f}".format(end-start))
+
+                start = time.time()
+                tokenized_text = self.tokenize(lemmatized_text)
+                end = time.time()
+                print("tokenization time {:0.2f}".format(end-start))  # little
+
+                start = time.time()
+                filtered_text, filtered_text_set = self.remove_stopwords(tokenized_text)
+                end = time.time()
+                print("removing stopwords time {:0.2f}".format(end-start))  # little
+
+                start = time.time()
+                embeddings = self.make_embeddings(filtered_text_set)
+                end = time.time()
+                print("making embeddings time {:0.2f}".format(end-start))
+
+                start = time.time()
+                y = self.apply_umap(embeddings)
+                # y = self.apply_tsne(embeddings)
+                end = time.time()
+                print("UMAP time {:0.2f}".format(end-start))
+                # print("t-SNE time {:0.2f}".format(end - start))
+
+                start = time.time()
+                df = self.make_dataframe(filtered_text, filtered_text_set, np.array(y), 'foreground')
+                end = time.time()
+                print("making dataframe time {:0.2f}".format(end-start))
+
+                start = time.time()
+                df = self.add_size(df)
+                end = time.time()
+                print("adding size column time {:0.2f}".format(end-start))  # little
+
+                start = time.time()
+                fig = self.plot_plotly(df)
+                end = time.time()
+                print("making plot time {:0.2f}".format(end-start))  # ~3 seconds
+
+                figs.append(fig)
+                # fig.show()
+            except:
+                print('error in', value)
+
+        figs_traces = []
+        for f in figs:
+            a = []
+            for trace in range(len(f["data"])):
+                a.append(f["data"][trace])
+            figs_traces.append(a)
+
+        half = round(n/2)
+        figure = make_subplots(rows=round(n/2), cols=2)
+        for i in range(len(figs_traces)):
+            for traces in figs_traces[i]:
+                if i+1 <= half:
+                    row = i+1
+                    col = 1
+                else:
+                    row = i+1-half
+                    col = 2
+                figure.append_trace(traces, row=row, col=col)
+
+        figure.show()
