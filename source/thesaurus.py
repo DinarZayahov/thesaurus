@@ -335,13 +335,18 @@ class Thesaurus:
 
             embeddings = self.make_embeddings(processed_tokens_set)
 
+            oov_words = []
+
             for i in range(len(processed_tokens_set)):
                 if processed_tokens_set[i] not in all_words:
                     if np.any(embeddings[i]):
                         all_embeddings.append(embeddings[i])
                         all_words.append(processed_tokens_set[i])
                     else:
-                        all_embeddings.append(bert.bert_embedding(processed_tokens_set[i]))
-                        all_words.append(processed_tokens_set[i])
+                        oov_words.append(processed_tokens_set[i])
+                        # all_embeddings.append(bert.bert_embedding(processed_tokens_set[i]))
+                        # all_words.append(processed_tokens_set[i])
+
+            print(oov_words)
 
         return all_embeddings, all_words
