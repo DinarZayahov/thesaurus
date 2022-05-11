@@ -1,4 +1,3 @@
-tarfile
 torch
 nltk
 gensim
