@@ -25,6 +25,7 @@ class Thesaurus:
     def __init__(self):
         self.spacy_model = None
         self.som = None
+        self.fig = None
 
     @staticmethod
     def read_text(file):
@@ -406,11 +407,13 @@ class Thesaurus:
     def show_map(self, background_embeds, background_words, foreground_names, processed_foregrounds):
         fig, som = self.plot_bokeh(background_embeds, background_words, foreground_names, processed_foregrounds)
         self.som = som
+        self.fig = fig
         show(fig)
 
-    def search(self, fig, words, embeds, search_word, search_color='blue'):
+    def search(self, words, embeds, search_word, search_color='blue'):
 
         som = self.som
+        fig = self.fig
         try:
             index = words.index(search_word)
 
