@@ -405,3 +405,44 @@ class Thesaurus:
     def show_map(self, background_embeds, background_words, foreground_names, processed_foregrounds):
         fig, _ = self.plot_bokeh(background_embeds, background_words, foreground_names, processed_foregrounds)
         show(fig)
+
+    @staticmethod
+    def search(som, fig, words, embeds, search_word, search_color='blue'):
+
+        try:
+            index = words.index(search_word)
+
+            label = []
+
+            weight_x, weight_y = [], []
+
+            w = som.winner(embeds[index])
+            wx, wy = som.convert_map_to_euclidean(xy=w)
+            wy = wy * np.sqrt(3) / 2
+            weight_x.append(wx)
+            weight_y.append(wy)
+            label.append(search_word)
+
+            source_pages = ColumnDataSource(
+                data=dict(
+                    wx=weight_x,
+                    wy=weight_y,
+                    species=label
+                )
+            )
+
+            point = fig.scatter(x='wy', y='wx', source=source_pages,
+                                line_width=0.1, fill_color=search_color, size=4)
+            circle = fig.scatter(x='wy', y='wx', source=source_pages,
+                                 line_color=search_color, line_width=1, line_alpha=1,
+                                 fill_alpha=0,
+                                 size=160)
+
+            show(fig)
+
+            return point, circle
+
+        except ValueError:
+            print('No such a word in map')
+
+            return None, None
