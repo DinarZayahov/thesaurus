@@ -9,8 +9,10 @@ from minisom import MiniSom
 from gensim.utils import tokenize
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, output_file
-from bokeh.io import show
+from bokeh.io import show, output_notebook
 from collections import Counter
+
+output_notebook()
 
 path = '../data/'
 STOPWORDS_FILE = path+'extended_stopwords.txt'
@@ -348,7 +350,7 @@ class Thesaurus:
                         # all_embeddings.append(bert.bert_embedding(processed_tokens_set[i]))
                         # all_words.append(processed_tokens_set[i])
 
-            print(oov_words)
+            # print(oov_words)
 
         return all_embeddings, all_words
 
