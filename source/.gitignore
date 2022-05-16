@@ -2,6 +2,7 @@ en_core_web_md-3.0.0/
 en_core_web_sm-3.0.0/
 
 en_core_web_md
+en_core_web_md_temporary
 en_core_web_sm
 
 experiment.py

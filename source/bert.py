@@ -1,6 +1,8 @@
 import torch
 import numpy as np
-from transformers import BertTokenizer, BertModel
+from transformers import BertTokenizer, BertModel, logging
+
+logging.set_verbosity_error()
 
 path = '../data/'
 STOPWORDS_FILE = path+'extended_stopwords.txt'

@@ -5,10 +5,11 @@ import nltk
 import numpy as np
 from tqdm import tqdm
 from minisom import MiniSom
-from bert import Bert
+# from bert import Bert
 from gensim.utils import tokenize
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, output_file
+from bokeh.io import show
 from collections import Counter
 
 path = '../data/'
@@ -311,7 +312,7 @@ class Thesaurus:
 
     def process_texts(self, texts):
 
-        bert = Bert()
+        # bert = Bert()
 
         all_embeddings = []
         all_words = []
@@ -350,3 +351,55 @@ class Thesaurus:
             print(oov_words)
 
         return all_embeddings, all_words
+
+    @staticmethod
+    def read_txt(file_name):
+        with open(file_name, 'r') as file:
+            return file.read()
+
+    @staticmethod
+    def read_pickle(file_name):
+        with open(file_name, 'rb') as file:
+            return pickle.load(file)
+
+    @staticmethod
+    def custom_preprocessing_of_data(data):
+        res = []
+        num_of_articles = 10
+        for article in data[:num_of_articles]:
+            try:
+                res.append(article['clean'])
+            except KeyError:
+                continue
+
+        return res
+
+    def process_foreground(self, foreground_names, texts):
+        processed_foregrounds = dict()
+
+        for foreground_unit in tqdm(foreground_names):
+            all_embeddings_of_unit, all_words_of_unit = self.process_texts(texts[foreground_unit])
+
+            one_processed_foreground = {'embeds': all_embeddings_of_unit, 'words': all_words_of_unit}
+            processed_foregrounds[foreground_unit] = one_processed_foreground
+
+        return processed_foregrounds
+
+    @staticmethod
+    def import_background():
+        background_embeds, background_words = None, None
+
+        if os.path.isfile(path + 'coca_embeds.pickle') and os.path.isfile(path + 'coca_tokens.pickle'):
+            embeds = open(path + 'coca_embeds.pickle', 'rb')
+            background_embeds = pickle.load(embeds)
+
+            tokens = open(path + 'coca_tokens.pickle', 'rb')
+            background_words = pickle.load(tokens)
+        else:
+            print("Didn't find background files")
+
+        return background_embeds, background_words
+
+    def show_map(self, background_embeds, background_words, foreground_names, processed_foregrounds):
+        fig, _ = self.plot_bokeh(background_embeds, background_words, foreground_names, processed_foregrounds)
+        show(fig)

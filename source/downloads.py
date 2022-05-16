@@ -1,6 +1,7 @@
 import requests
 import os
 import tarfile
+import nltk
 
 
 def download_model():
@@ -13,3 +14,10 @@ def download_model():
         tar = tarfile.open(filename, 'r:gz')
         tar.extractall()
         tar.close()
+
+
+def make_downloads():
+    download_model()
+    nltk.download('words')
+    nltk.download('wordnet')
+
