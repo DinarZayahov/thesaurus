@@ -24,6 +24,7 @@ LEMMATIZATION_THRESHOLD = 500000
 class Thesaurus:
     def __init__(self):
         self.spacy_model = None
+        self.som = None
 
     @staticmethod
     def read_text(file):
@@ -403,12 +404,13 @@ class Thesaurus:
         return background_embeds, background_words
 
     def show_map(self, background_embeds, background_words, foreground_names, processed_foregrounds):
-        fig, _ = self.plot_bokeh(background_embeds, background_words, foreground_names, processed_foregrounds)
+        fig, som = self.plot_bokeh(background_embeds, background_words, foreground_names, processed_foregrounds)
+        self.som = som
         show(fig)
 
-    @staticmethod
-    def search(som, fig, words, embeds, search_word, search_color='blue'):
+    def search(self, fig, words, embeds, search_word, search_color='blue'):
 
+        som = self.som
         try:
             index = words.index(search_word)
 
