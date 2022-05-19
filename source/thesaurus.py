@@ -234,7 +234,7 @@ class Thesaurus:
 
         output_file("../data/som.html")
         fig = figure(plot_height=plot_size, plot_width=plot_size,
-                     match_aspect=True,
+                     match_aspect=False,
                      tools="pan, wheel_zoom, reset, save")
 
         fig.axis.visible = False
