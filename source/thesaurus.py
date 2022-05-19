@@ -130,7 +130,7 @@ class Thesaurus:
         neurons_num = 5 * np.sqrt(n)
         return int(np.ceil(np.sqrt(neurons_num)))
 
-    def set_som(self, mode='load', **embeddings_b):
+    def set_som(self, mode='load', embeddings_b=None):
 
         if mode == 'train':
 
