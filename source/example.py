@@ -33,4 +33,6 @@ processed_foregrounds = obj.process_foreground(foreground_names, texts)
 
 background_embeds, background_words = obj.import_background()
 
+obj.set_som()
+
 obj.show_map(background_embeds, background_words, foreground_names, processed_foregrounds)

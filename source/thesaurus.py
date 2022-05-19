@@ -26,6 +26,7 @@ class Thesaurus:
         self.spacy_model = None
         self.som = None
         self.fig = None
+        self.model = None
 
     @staticmethod
     def read_text(file):
@@ -129,13 +130,16 @@ class Thesaurus:
         neurons_num = 5 * np.sqrt(n)
         return int(np.ceil(np.sqrt(neurons_num)))
 
-    @staticmethod
-    def get_som(grid_size, embeddings_b, mode='load'):
-        sigma = 2
-        lr = 5
-        iterations = 50000
+    def set_som(self, mode='load', **embeddings_b):
 
         if mode == 'train':
+
+            sigma = 2
+            lr = 5
+            iterations = 50000
+
+            grid_size = int(np.ceil(np.sqrt(len(embeddings_b))))
+
             som = MiniSom(grid_size, grid_size, len(embeddings_b[0]), sigma=sigma, learning_rate=lr,
                           activation_distance='euclidean', topology='hexagonal', neighborhood_function='gaussian',
                           random_seed=10)
@@ -149,7 +153,7 @@ class Thesaurus:
             model = open(path + 'som.pickle', 'rb')
             som = pickle.load(model)
 
-        return som
+        self.model = som
 
     def plot_bokeh(self, background_embeds, background_words, foreground_names, preprocessed_foregrounds,
                    background_color='#d2e4f5', foreground_colors=None):
@@ -169,7 +173,7 @@ class Thesaurus:
 
         plot_size = hexagon_size * (grid_size + 1)
 
-        som = self.get_som(grid_size, background_embeds)
+        som = self.model
 
         if os.path.isfile(path + 'index.pickle'):
             with open(path + 'index.pickle', 'rb') as index_file:
