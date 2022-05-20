@@ -132,8 +132,6 @@ class Thesaurus:
 
     def set_som(self, mode='load', embeddings_b=None):
 
-        res = None
-
         if mode == 'train':
 
             sigma = 2
@@ -150,17 +148,11 @@ class Thesaurus:
 
             with open(path + 'som.pickle', 'wb') as som_file:
                 pickle.dump(som, som_file)
-
-            res = 'new'
         else:
             model = open(path + 'som.pickle', 'rb')
             som = pickle.load(model)
 
-            res = 'old'
-
         self.model = som
-
-        return res
 
     def plot_bokeh(self, background_embeds, background_words, foreground_names, preprocessed_foregrounds,
                    background_color='#d2e4f5', foreground_colors=None, model='old'):
