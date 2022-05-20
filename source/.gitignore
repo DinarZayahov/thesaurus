@@ -6,6 +6,7 @@ en_core_web_md_temporary
 en_core_web_sm
 
 experiment.py
+tutorial.py
 
 res.csv
 

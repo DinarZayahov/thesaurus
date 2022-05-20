@@ -132,6 +132,8 @@ class Thesaurus:
 
     def set_som(self, mode='load', embeddings_b=None):
 
+        res = None
+
         if mode == 'train':
 
             sigma = 2
@@ -144,19 +146,24 @@ class Thesaurus:
                           activation_distance='euclidean', topology='hexagonal', neighborhood_function='gaussian',
                           random_seed=10)
 
-            som.train(embeddings_b, iterations, verbose=False)
+            som.train(embeddings_b, iterations, verbose=True)
 
             with open(path + 'som.pickle', 'wb') as som_file:
                 pickle.dump(som, som_file)
 
+            res = 'new'
         else:
             model = open(path + 'som.pickle', 'rb')
             som = pickle.load(model)
 
+            res = 'old'
+
         self.model = som
 
+        return res
+
     def plot_bokeh(self, background_embeds, background_words, foreground_names, preprocessed_foregrounds,
-                   background_color='#d2e4f5', foreground_colors=None):
+                   background_color='#d2e4f5', foreground_colors=None, model='old'):
 
         """
         foreground_names ['foreground_name1', ...]
@@ -169,13 +176,14 @@ class Thesaurus:
         dot_size = 4
 
         grid_size = int(np.ceil(np.sqrt(len(background_embeds))))
-        # print(GRID_SIZE)
+        # print(grid_size)
 
-        plot_size = hexagon_size * (grid_size + 1)
+        plot_size = int(hexagon_size * grid_size * 1.5)
+        # print(plot_size)
 
         som = self.model
 
-        if os.path.isfile(path + 'index.pickle'):
+        if os.path.isfile(path + 'index.pickle') and model == 'old':
             with open(path + 'index.pickle', 'rb') as index_file:
                 index = pickle.load(index_file)
 
@@ -234,7 +242,7 @@ class Thesaurus:
 
         output_file("../data/som.html")
         fig = figure(plot_height=plot_size, plot_width=plot_size,
-                     match_aspect=False,
+                     match_aspect=True,
                      tools="pan, wheel_zoom, reset, save")
 
         fig.axis.visible = False
@@ -408,8 +416,9 @@ class Thesaurus:
 
         return background_embeds, background_words
 
-    def show_map(self, background_embeds, background_words, foreground_names, processed_foregrounds):
-        fig, som = self.plot_bokeh(background_embeds, background_words, foreground_names, processed_foregrounds)
+    def show_map(self, background_embeds, background_words, foreground_names, processed_foregrounds, model='old'):
+        fig, som = self.plot_bokeh(background_embeds, background_words, foreground_names, processed_foregrounds,
+                                   model=model)
         self.som = som
         self.fig = fig
         show(fig)
