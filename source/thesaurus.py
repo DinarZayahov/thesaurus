@@ -11,22 +11,50 @@ from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, output_file
 from bokeh.io import show, output_notebook
 from collections import Counter
+from downloads import make_downloads
 
 output_notebook()
 
 path = '../data/'
-STOPWORDS_FILE = path+'extended_stopwords.txt'
 
 MAX_LENGTH = 50000000
 LEMMATIZATION_THRESHOLD = 500000
 
+models = {'eng': 'en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0',
+          'fra': 'fr_core_news_md',
+          'deu': 'de_core_news_md'}
+back_embeds = {'eng': 'coca_embeds.pickle',
+               'fra': 'fra_embeds.pickle',
+               'deu': 'deu_embeds.pickle'}
+back_tokens = {'eng': 'coca_tokens.pickle',
+               'fra': 'fra_tokens.pickle',
+               'deu': 'deu_tokens.pickle'}
+index_files = {'eng': 'index_eng.pickle',
+               'fra': 'index_fra.pickle',
+               'deu': 'index_deu.pickle'}
+
 
 class Thesaurus:
-    def __init__(self):
+    def __init__(self, lang):
         self.spacy_model = None
         self.som = None
         self.fig = None
         self.model = None
+        self.lang = lang
+        if lang == 'eng':
+            self.STOPWORDS_FILE = path + 'extended_stopwords_en.txt'
+            self.embeddings_file = 'embeddings_eng.pickle'
+            self.som_file = path + 'som_eng.pickle'
+        elif lang == 'fra':
+            self.STOPWORDS_FILE = path + 'extended_stopwords_fr.txt'
+            self.embeddings_file = 'embeddings_fra.pickle'
+            self.som_file = path + 'som_fra.pickle'
+        elif lang == 'deu':
+            self.STOPWORDS_FILE = path + 'extended_stopwords_deu.txt'
+            self.embeddings_file = 'embeddings_deu.pickle'
+            self.som_file = path + 'som_deu.pickle'
+        assert lang in ['eng', 'fra', 'deu'], "Please choose one of the following languages: ['eng, 'fra', 'deu'] "
+        make_downloads(lang)
 
     @staticmethod
     def read_text(file):
@@ -36,7 +64,9 @@ class Thesaurus:
             lines.append(line)
         return ''.join(lines)
 
-    def set_spacy_model(self, model):
+    def set_spacy_model(self, model=None):
+        if model is None:
+            model = models[self.lang]
         self.spacy_model = spacy.load(model)
         self.spacy_model.max_length = MAX_LENGTH
 
@@ -72,7 +102,7 @@ class Thesaurus:
         return stopwords
 
     def remove_stopwords(self, tokens: list):
-        stopwords = self.get_stopwords(STOPWORDS_FILE)
+        stopwords = self.get_stopwords(self.STOPWORDS_FILE)
         filtered_tokens = []
         for token in tokens:
             if token not in stopwords:
@@ -80,8 +110,11 @@ class Thesaurus:
         return filtered_tokens, list(dict.fromkeys(filtered_tokens))
 
     @staticmethod
-    def preprocess(tokens):
-        words = set(nltk.corpus.words.words())
+    def preprocess(self, tokens):
+        if self.lang == 'deu':
+            words = set(self.spacy_model.vocab.strings)
+        else:
+            words = set(nltk.corpus.wordnet.words(lang=self.lang))
 
         result = []
 
@@ -94,7 +127,7 @@ class Thesaurus:
         return result
 
     def make_embeddings(self, tokens: list) -> list:
-        embeddings_filename = 'embeddings.pickle'
+        embeddings_filename = self.embeddings_file
         if os.path.exists(embeddings_filename):
             # print('Found cache..')
             embeddings_file = open(embeddings_filename, 'rb')
@@ -146,10 +179,10 @@ class Thesaurus:
 
             som.train(embeddings_b, iterations, verbose=True)
 
-            with open(path + 'som.pickle', 'wb') as som_file:
+            with open(self.som_file, 'wb') as som_file:
                 pickle.dump(som, som_file)
         else:
-            model = open(path + 'som.pickle', 'rb')
+            model = open(self.som_file, 'rb')
             som = pickle.load(model)
 
         self.model = som
@@ -175,8 +208,8 @@ class Thesaurus:
 
         som = self.model
 
-        if os.path.isfile(path + 'index.pickle') and model == 'old':
-            with open(path + 'index.pickle', 'rb') as index_file:
+        if os.path.isfile(path + index_files[self.lang]) and model == 'old':
+            with open(path + index_files[self.lang], 'rb') as index_file:
                 index = pickle.load(index_file)
 
             b_label = []
@@ -206,7 +239,7 @@ class Thesaurus:
                 b_weight_y.append(wy)
                 b_label.append(background_words[cnt])
 
-            with open(path+"index.pickle", 'wb') as index_file:
+            with open(path + index_files[self.lang], 'wb') as index_file:
                 pickle.dump(index, index_file)
 
         translations = [(-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15)]
@@ -340,7 +373,7 @@ class Thesaurus:
                 if cb[tok] == occurrence:
                     new.append(tok)
 
-            processed_tokens_set = self.preprocess(new)
+            processed_tokens_set = self.preprocess(self, new)
 
             embeddings = self.make_embeddings(processed_tokens_set)
 
@@ -393,15 +426,14 @@ class Thesaurus:
 
         return processed_foregrounds
 
-    @staticmethod
-    def import_background():
+    def import_background(self):
         background_embeds, background_words = None, None
 
-        if os.path.isfile(path + 'coca_embeds.pickle') and os.path.isfile(path + 'coca_tokens.pickle'):
-            embeds = open(path + 'coca_embeds.pickle', 'rb')
+        if os.path.isfile(path + back_embeds[self.lang]) and os.path.isfile(path + back_embeds[self.lang]):
+            embeds = open(path + back_embeds[self.lang], 'rb')
             background_embeds = pickle.load(embeds)
 
-            tokens = open(path + 'coca_tokens.pickle', 'rb')
+            tokens = open(path + back_tokens[self.lang], 'rb')
             background_words = pickle.load(tokens)
         else:
             print("Didn't find background files")
