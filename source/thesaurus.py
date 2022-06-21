@@ -12,6 +12,8 @@ from bokeh.plotting import figure, output_file
 from bokeh.io import show, output_notebook
 from collections import Counter
 from downloads import make_downloads
+from arabic_preprocessor import Preprocessor
+from nltk.stem.isri import ISRIStemmer
 
 output_notebook()
 
@@ -22,16 +24,20 @@ LEMMATIZATION_THRESHOLD = 500000
 
 models = {'eng': 'en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0',
           'fra': 'fr_core_news_md',
-          'deu': 'de_core_news_md'}
+          'deu': 'de_core_news_md',
+          'ara': './spacy.aravec.model/'}
 back_embeds = {'eng': 'coca_embeds.pickle',
                'fra': 'fra_embeds.pickle',
-               'deu': 'deu_embeds.pickle'}
+               'deu': 'deu_embeds.pickle',
+               'ara': 'ara_embeds.pickle'}
 back_tokens = {'eng': 'coca_tokens.pickle',
                'fra': 'fra_tokens.pickle',
-               'deu': 'deu_tokens.pickle'}
+               'deu': 'deu_tokens.pickle',
+               'ara': 'ara_tokens.pickle'}
 index_files = {'eng': 'index_eng.pickle',
                'fra': 'index_fra.pickle',
-               'deu': 'index_deu.pickle'}
+               'deu': 'index_deu.pickle',
+               'ara': 'index_ara.pickle'}
 
 
 class Thesaurus:
@@ -53,7 +59,12 @@ class Thesaurus:
             self.STOPWORDS_FILE = path + 'extended_stopwords_deu.txt'
             self.embeddings_file = 'embeddings_deu.pickle'
             self.som_file = path + 'som_deu.pickle'
-        assert lang in ['eng', 'fra', 'deu'], "Please choose one of the following languages: ['eng, 'fra', 'deu'] "
+        elif lang == 'ara':
+            self.STOPWORDS_FILE = path + 'extended_stopwords_ara.txt'
+            self.embeddings_file = 'embeddings_ara.pickle'
+            self.som_file = path + 'som_ara.pickle'
+        else:
+            raise SyntaxError("Please choose one of the following languages: ['eng, 'fra', 'deu', 'ara'] ")
         make_downloads(lang)
 
     @staticmethod
@@ -69,6 +80,8 @@ class Thesaurus:
             model = models[self.lang]
         self.spacy_model = spacy.load(model)
         self.spacy_model.max_length = MAX_LENGTH
+        if self.lang == 'ara':
+            self.spacy_model.tokenizer = Preprocessor(self.spacy_model.tokenizer)
 
     def get_nes(self, text):
         doc = self.spacy_model(text)
@@ -79,7 +92,12 @@ class Thesaurus:
         return list(dict.fromkeys(nes))
 
     def lemmatize(self, text, length):
-        if length < LEMMATIZATION_THRESHOLD:
+        if self.lang == 'ara':
+            st = ISRIStemmer()
+            doc = self.spacy_model(text)
+            result = " ".join([st.stem(str(token)) for token in doc])
+            return result
+        elif length < LEMMATIZATION_THRESHOLD:
             doc = self.spacy_model(text)
             result = " ".join([token.lemma_ for token in doc])
             return result
@@ -111,12 +129,19 @@ class Thesaurus:
 
     @staticmethod
     def preprocess(self, tokens):
+        result = []
+        if self.lang == 'ara':
+            for token in tokens:
+                if (not token.isalpha()) or (len(token) <= 2):
+                    continue
+                else:
+                    result.append(token)
+
+            return result
         if self.lang == 'deu':
             words = set(self.spacy_model.vocab.strings)
         else:
             words = set(nltk.corpus.wordnet.words(lang=self.lang))
-
-        result = []
 
         for token in tokens:
             if (token not in words) or (not token.isalpha()) or (len(token) <= 2):

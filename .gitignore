@@ -130,6 +130,9 @@ dmypy.json
 
 pip_library/
 .idea/
+
+# AraVec model
+source/spacy.aravec.model/
 temp/
 other/
 6...Anapproachtovisualthesaurusexploration.acasestudyforRussianlanguage-final.pdf

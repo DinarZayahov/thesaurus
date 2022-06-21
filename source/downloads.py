@@ -31,7 +31,7 @@ def make_downloads(lang):
         download_model_en()
     elif lang == 'fra':
         download_model_fr()
-    else:
-        print("Please choose one of the following languages: ['eng','fra']")
+    # else:
+    #     print("Please choose one of the following languages: ['eng','fra']")
     nltk.download('words')
     nltk.download('wordnet')
