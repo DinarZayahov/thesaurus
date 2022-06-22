@@ -14,6 +14,7 @@ from collections import Counter
 from downloads import make_downloads
 from arabic_preprocessor import Preprocessor
 from nltk.stem.isri import ISRIStemmer
+from sentence_transformers import SentenceTransformer
 
 output_notebook()
 
@@ -46,6 +47,7 @@ class Thesaurus:
         self.som = None
         self.fig = None
         self.model = None
+        self.embed_model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-mpnet-base-v2')
         self.lang = lang
         if lang == 'eng':
             self.STOPWORDS_FILE = path + 'extended_stopwords_en.txt'
@@ -163,7 +165,8 @@ class Thesaurus:
                 if token in dictionary:
                     result.append(dictionary[token])
                 else:
-                    e = self.spacy_model(token).vector
+                    e = self.embed_model.encode(token)
+                    # e = self.spacy_model(token).vector
                     dictionary[token] = e
                     changed = True
                     result.append(e)
@@ -178,7 +181,8 @@ class Thesaurus:
             # print('Cache not found..')
             dictionary = dict()
             for token in tokens:
-                dictionary[token] = self.spacy_model(token).vector
+                dictionary[token] = self.embed_model.encode(token)
+                # dictionary[token] = self.spacy_model(token).vector
             embeddings_file = open(embeddings_filename, 'wb')
             pickle.dump(dictionary, embeddings_file)
             return list(dictionary.values())
