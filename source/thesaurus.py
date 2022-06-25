@@ -132,21 +132,9 @@ class Thesaurus:
     @staticmethod
     def preprocess(self, tokens):
         result = []
-        if self.lang == 'ara':
-            for token in tokens:
-                if (not token.isalpha()) or (len(token) <= 2):
-                    continue
-                else:
-                    result.append(token)
-
-            return result
-        if self.lang == 'deu':
-            words = set(self.spacy_model.vocab.strings)
-        else:
-            words = set(nltk.corpus.wordnet.words(lang=self.lang))
 
         for token in tokens:
-            if (token not in words) or (not token.isalpha()) or (len(token) <= 2):
+            if (not token.isalpha()) or (len(token) <= 2):
                 continue
             else:
                 result.append(token)
