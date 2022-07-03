@@ -212,7 +212,7 @@ class Thesaurus:
         preprocessed_foregrounds: {'foreground_name1': {'embeds': [...], 'words': [...]}, ...]
         """
         if foreground_colors is None:
-            foreground_colors = ['#f5a09a', 'green']
+            foreground_colors = ['#f5a09a', 'green', '#f5b19a', '#f5d59a', '#ebe428', '#28ebd1', '#1996b3', '#0b2575', '#2d0a5e', '#4d0545']
 
         hexagon_size = 10
         dot_size = 4
@@ -220,7 +220,7 @@ class Thesaurus:
         grid_size = int(np.ceil(np.sqrt(len(background_embeds))))
         # print(grid_size)
 
-        plot_size = int(hexagon_size * grid_size * 1.5)
+        plot_size = int(hexagon_size * grid_size * 1)
         # print(plot_size)
 
         som = self.model
@@ -259,7 +259,8 @@ class Thesaurus:
             with open(path + index_files[self.lang], 'wb') as index_file:
                 pickle.dump(index, index_file)
 
-        translations = [(-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15)]
+        #translations = [(-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15)]
+        translations = [(-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15), (0.15, -0.15), (-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15), (0.15, -0.15), (-0.15, -0.15), (0.15, 0.15)]
 
         for foreground_unit in foreground_names:
             label = []
@@ -282,7 +283,7 @@ class Thesaurus:
             fu['weight_x'] = weight_x
             fu['weight_y'] = weight_y
 
-        output_file("../data/som.html")
+        output_file("../data/som_" + self.lang + ".html")
         fig = figure(plot_height=plot_size, plot_width=plot_size,
                      match_aspect=True,
                      tools="pan, wheel_zoom, reset, save")
