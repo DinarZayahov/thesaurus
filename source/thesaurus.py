@@ -212,15 +212,14 @@ class Thesaurus:
         preprocessed_foregrounds: {'foreground_name1': {'embeds': [...], 'words': [...]}, ...]
         """
         if foreground_colors is None:
-            foreground_colors = ['#f5a09a', 'green', '#f5b19a', '#f5d59a', '#ebe428', '#28ebd1', '#1996b3', '#0b2575', '#2d0a5e', '#4d0545']
+            foreground_colors = ['#f5a09a', 'green', '#f5b19a', '#f5d59a', '#ebe428',
+                                 '#28ebd1', '#1996b3', '#0b2575', '#2d0a5e', '#4d0545']
 
         hexagon_size = 10
         dot_size = 4
+        grid_size = 100
 
-        grid_size = int(np.ceil(np.sqrt(len(background_embeds))))
-        # print(grid_size)
-
-        plot_size = int(hexagon_size * grid_size * 1)
+        plot_size = int(hexagon_size * grid_size * 1.5)
         # print(plot_size)
 
         som = self.model
