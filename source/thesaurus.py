@@ -447,12 +447,20 @@ class Thesaurus:
     def import_background(self):
         background_embeds, background_words = None, None
 
-        if os.path.isfile(path + back_embeds[self.lang]) and os.path.isfile(path + back_embeds[self.lang]):
+        if os.path.isfile(path + back_embeds[self.lang]) and os.path.isfile(path + back_tokens[self.lang]):
             embeds = open(path + back_embeds[self.lang], 'rb')
             background_embeds = pickle.load(embeds)
 
             tokens = open(path + back_tokens[self.lang], 'rb')
             background_words = pickle.load(tokens)
+        elif os.path.isfile(path + back_tokens[self.lang]):
+            tokens = open(path + back_tokens[self.lang], 'rb')
+            background_words = pickle.load(tokens)
+            background_embeds = []
+            for token in tqdm(background_words):
+                background_embeds.append(self.embed_model.encode(token))
+            embeddings_file = open(path + back_embeds[self.lang], 'wb')
+            pickle.dump(background_embeds, embeddings_file)
         else:
             print("Didn't find background files")
 
