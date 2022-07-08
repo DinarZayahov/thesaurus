@@ -15,6 +15,7 @@ from downloads import make_downloads
 from arabic_preprocessor import Preprocessor
 from nltk.stem.isri import ISRIStemmer
 from sentence_transformers import SentenceTransformer
+import matplotlib.pyplot as plt
 
 output_notebook()
 
@@ -258,8 +259,9 @@ class Thesaurus:
             with open(path + index_files[self.lang], 'wb') as index_file:
                 pickle.dump(index, index_file)
 
-        #translations = [(-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15)]
-        translations = [(-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15), (0.15, -0.15), (-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15), (0.15, -0.15), (-0.15, -0.15), (0.15, 0.15)]
+        # translations = [(-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15)]
+        translations = [(-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15), (0.15, -0.15), (-0.15, -0.15), (0.15, 0.15),
+                        (-0.15, 0.15), (0.15, -0.15), (-0.15, -0.15), (0.15, 0.15)]
 
         for foreground_unit in foreground_names:
             label = []
@@ -315,6 +317,7 @@ class Thesaurus:
             fu = preprocessed_foregrounds[foreground_unit]
 
             translation = translations.pop(0)
+            translations.append(translation)
 
             hex_ = {'weight_x': [], 'weight_y': [], 'label': [], 'size': []}
             for i in range(len(fu['weight_x'])):
@@ -348,6 +351,7 @@ class Thesaurus:
         for foreground_unit in foreground_names:
             fu = preprocessed_foregrounds[foreground_unit]
             current_color = foreground_colors.pop(0)
+            foreground_colors.append(current_color)
             fig.hex(x='wy', y='wx', source=fu['hex_pages'],
                     fill_color=current_color,
                     line_width=0.1,
