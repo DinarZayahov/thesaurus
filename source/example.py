@@ -1,9 +1,7 @@
 from downloads import make_downloads
 from thesaurus import Thesaurus
 
-make_downloads()
-
-obj = Thesaurus()
+obj = Thesaurus(lang='eng')
 
 text1 = obj.read_pickle('../data/2017')
 text2 = obj.read_txt('../data/shakespeare.txt')

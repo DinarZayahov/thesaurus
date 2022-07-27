@@ -1,9 +1,12 @@
 en_core_web_md-3.0.0/
 en_core_web_sm-3.0.0/
+fr_core_news_md-3.3.0/
 
 en_core_web_md
 en_core_web_md_temporary
 en_core_web_sm
+
+fr_core_news_md_temporary
 
 experiment.py
 tutorial.py
@@ -12,7 +15,10 @@ res.csv
 
 stats.py
 
-embeddings.pickle
+embeddings_eng.pickle
+embeddings_ara.pickle
+embeddings_fra.pickle
+embeddings_deu.pickle
 
 embeds1.pickle
 embeds2.pickle
