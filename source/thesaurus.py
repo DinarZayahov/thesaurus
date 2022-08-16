@@ -25,7 +25,7 @@ MAX_LENGTH = 50000000
 LEMMATIZATION_THRESHOLD = 500000
 
 models = {'eng': 'en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0',
-          'fra': 'fr_core_news_md',
+          'fra': 'fr_core_news_md-3.3.0/fr_core_news_md/fr_core_news_md-3.3.0',
           'deu': 'de_core_news_md',
           'ara': './spacy.aravec.model/'}
 back_embeds = {'eng': 'coca_embeds.pickle',
