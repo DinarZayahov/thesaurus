@@ -27,19 +27,23 @@ LEMMATIZATION_THRESHOLD = 500000
 models = {'eng': 'en_core_web_md-3.0.0/en_core_web_md/en_core_web_md-3.0.0',
           'fra': 'fr_core_news_md-3.3.0/fr_core_news_md/fr_core_news_md-3.3.0',
           'deu': 'de_core_news_md',
-          'ara': './spacy.aravec.model/'}
+          'ara': './spacy.aravec.model/',
+          'ru': 'ru_core_news_md'}
 back_embeds = {'eng': 'coca_embeds.pickle',
                'fra': 'fra_embeds.pickle',
                'deu': 'deu_embeds.pickle',
-               'ara': 'ara_embeds.pickle'}
+               'ara': 'ara_embeds.pickle',
+               'ru': 'ru_embeds.pickle'}
 back_tokens = {'eng': 'coca_tokens.pickle',
                'fra': 'fra_tokens.pickle',
                'deu': 'deu_tokens.pickle',
-               'ara': 'ara_tokens.pickle'}
+               'ara': 'ara_tokens.pickle',
+               'ru': 'ru_tokens.pickle'}
 index_files = {'eng': 'index_eng.pickle',
                'fra': 'index_fra.pickle',
                'deu': 'index_deu.pickle',
-               'ara': 'index_ara.pickle'}
+               'ara': 'index_ara.pickle',
+               'ru': 'index_ru.pickle'}
 
 
 class Thesaurus:
@@ -66,8 +70,12 @@ class Thesaurus:
             self.STOPWORDS_FILE = path + 'extended_stopwords_ara.txt'
             self.embeddings_file = 'embeddings_ara.pickle'
             self.som_file = path + 'som_ara.pickle'
+        elif lang == 'ru':
+            self.STOPWORDS_FILE = path + 'extended_stopwords_ru.txt'
+            self.embeddings_file = 'embeddings_ru.pickle'
+            self.som_file = path + 'som_ru.pickle'
         else:
-            raise SyntaxError("Please choose one of the following languages: ['eng, 'fra', 'deu', 'ara'] ")
+            raise SyntaxError("Please choose one of the following languages: ['eng, 'fra', 'deu', 'ara', 'ru'] ")
         make_downloads(lang)
 
     @staticmethod
