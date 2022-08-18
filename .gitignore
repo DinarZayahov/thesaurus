@@ -136,8 +136,10 @@ source/spacy.aravec.model/
 
 #Spacy models
 source/fr_core_news_md-3.3.0
+source/ru_core_news_md-3.4.0
 source/en_core_web_md-3.0.0
 source/fr_core_news_md_temporary
+source/ru_core_news_md_temporary
 source/en_core_web_md_temporary
 temp/
 other/
