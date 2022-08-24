@@ -55,25 +55,25 @@ class Thesaurus:
         self.embed_model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-mpnet-base-v2')
         self.lang = lang
         if lang == 'eng':
-            self.STOPWORDS_FILE = path + 'extended_stopwords_en.txt'
-            self.embeddings_file = 'embeddings_eng.pickle'
-            self.som_file = path + 'som_eng.pickle'
+            self.STOPWORDS_FILE = path + 'stopwords/extended_stopwords_en.txt'
+            self.embeddings_file = 'embeddings_files' + 'embeddings_eng.pickle'
+            self.som_file = path + 'pretrained_models/' + 'som_eng.pickle'
         elif lang == 'fra':
-            self.STOPWORDS_FILE = path + 'extended_stopwords_fr.txt'
-            self.embeddings_file = 'embeddings_fra.pickle'
-            self.som_file = path + 'som_fra.pickle'
+            self.STOPWORDS_FILE = path + 'stopwords/extended_stopwords_fr.txt'
+            self.embeddings_file = 'embeddings_files' + 'embeddings_fra.pickle'
+            self.som_file = path + 'pretrained_models/' + 'som_fra.pickle'
         elif lang == 'deu':
-            self.STOPWORDS_FILE = path + 'extended_stopwords_deu.txt'
-            self.embeddings_file = 'embeddings_deu.pickle'
-            self.som_file = path + 'som_deu.pickle'
+            self.STOPWORDS_FILE = path + 'stopwords/extended_stopwords_deu.txt'
+            self.embeddings_file = 'embeddings_files' + 'embeddings_deu.pickle'
+            self.som_file = path + 'pretrained_models/' + 'som_deu.pickle'
         elif lang == 'ara':
-            self.STOPWORDS_FILE = path + 'extended_stopwords_ara.txt'
-            self.embeddings_file = 'embeddings_ara.pickle'
-            self.som_file = path + 'som_ara.pickle'
+            self.STOPWORDS_FILE = path + 'stopwords/extended_stopwords_ara.txt'
+            self.embeddings_file = 'embeddings_files' + 'embeddings_ara.pickle'
+            self.som_file = path + 'pretrained_models/' + 'som_ara.pickle'
         elif lang == 'ru':
-            self.STOPWORDS_FILE = path + 'extended_stopwords_ru.txt'
-            self.embeddings_file = 'embeddings_ru.pickle'
-            self.som_file = path + 'som_ru.pickle'
+            self.STOPWORDS_FILE = path + 'stopwords/extended_stopwords_ru.txt'
+            self.embeddings_file = 'embeddings_files' + 'embeddings_ru.pickle'
+            self.som_file = path + 'pretrained_models/' + 'som_ru.pickle'
         else:
             raise SyntaxError("Please choose one of the following languages: ['eng, 'fra', 'deu', 'ara', 'ru'] ")
         make_downloads(lang)
@@ -233,8 +233,8 @@ class Thesaurus:
 
         som = self.model
 
-        if os.path.isfile(path + index_files[self.lang]) and model == 'old':
-            with open(path + index_files[self.lang], 'rb') as index_file:
+        if os.path.isfile(path + 'index_files/' + index_files[self.lang]) and model == 'old':
+            with open(path + 'index_files/' + index_files[self.lang], 'rb') as index_file:
                 index = pickle.load(index_file)
 
             b_label = []
@@ -264,7 +264,7 @@ class Thesaurus:
                 b_weight_y.append(wy)
                 b_label.append(background_words[cnt])
 
-            with open(path + index_files[self.lang], 'wb') as index_file:
+            with open(path + 'index_files/' + index_files[self.lang], 'wb') as index_file:
                 pickle.dump(index, index_file)
 
         # translations = [(-0.15, -0.15), (0.15, 0.15), (-0.15, 0.15)]
@@ -292,7 +292,7 @@ class Thesaurus:
             fu['weight_x'] = weight_x
             fu['weight_y'] = weight_y
 
-        output_file("../data/som_" + self.lang + ".html")
+        output_file("../data/visualization_history/som_" + self.lang + ".html")
         fig = figure(plot_height=plot_size, plot_width=plot_size,
                      match_aspect=True,
                      tools="pan, wheel_zoom, reset, save")
@@ -458,19 +458,19 @@ class Thesaurus:
     def import_background(self):
         background_embeds, background_words = None, None
 
-        if os.path.isfile(path + back_embeds[self.lang]) and os.path.isfile(path + back_tokens[self.lang]):
-            embeds = open(path + back_embeds[self.lang], 'rb')
+        if os.path.isfile(path + 'back_embeds/' + back_embeds[self.lang]) and os.path.isfile(path + 'back_tokens/' + back_tokens[self.lang]):
+            embeds = open(path + 'back_embeds/' + back_embeds[self.lang], 'rb')
             background_embeds = pickle.load(embeds)
 
-            tokens = open(path + back_tokens[self.lang], 'rb')
+            tokens = open(path + 'back_tokens/' + back_tokens[self.lang], 'rb')
             background_words = pickle.load(tokens)
-        elif os.path.isfile(path + back_tokens[self.lang]):
-            tokens = open(path + back_tokens[self.lang], 'rb')
+        elif os.path.isfile(path + 'back_tokens/' + back_tokens[self.lang]):
+            tokens = open(path + 'back_tokens/' + back_tokens[self.lang], 'rb')
             background_words = pickle.load(tokens)
             background_embeds = []
             for token in tqdm(background_words):
                 background_embeds.append(self.embed_model.encode(token))
-            embeddings_file = open(path + back_embeds[self.lang], 'wb')
+            embeddings_file = open(path + 'back_embeds/' + back_embeds[self.lang], 'wb')
             pickle.dump(background_embeds, embeddings_file)
         else:
             print("Didn't find background files")
