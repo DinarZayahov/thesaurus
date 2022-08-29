@@ -1,7 +1,6 @@
 import pickle
 import os
 import spacy
-import nltk
 import numpy as np
 from tqdm import tqdm
 from minisom import MiniSom
@@ -15,7 +14,6 @@ from downloads import make_downloads
 from arabic_preprocessor import Preprocessor
 from nltk.stem.isri import ISRIStemmer
 from sentence_transformers import SentenceTransformer
-import matplotlib.pyplot as plt
 
 output_notebook()
 
@@ -77,6 +75,8 @@ class Thesaurus:
         else:
             raise SyntaxError("Please choose one of the following languages: ['eng, 'fra', 'deu', 'ara', 'ru'] ")
         make_downloads(lang)
+        # self.set_spacy_model()
+        self.set_som()
 
     @staticmethod
     def read_text(file):

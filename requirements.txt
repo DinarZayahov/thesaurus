@@ -1,12 +1,8 @@
-torch
-nltk
 gensim
 numpy
-matplotlib
 tqdm
-sklearn
 spacy>=3.0.5
-bokeh==2.2.2
+bokeh
 minisom
 transformers
 sentence-transformers
