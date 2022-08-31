@@ -75,7 +75,7 @@ class Thesaurus:
         else:
             raise SyntaxError("Please choose one of the following languages: ['eng, 'fra', 'deu', 'ara', 'rus'] ")
         make_downloads(lang)
-        # self.set_spacy_model()
+        self.set_spacy_model()
         self.set_som()
 
     @staticmethod

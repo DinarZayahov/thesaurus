@@ -75,3 +75,13 @@ print("Go to https://nbviewer.org/github/DinarZayahov/thesaurus/blob/master/Thes
        to see the outputs of the notebook as the GitHub doesn't render dynamic output")
 obj.show_map(background_embeds, background_words, foreground_names, processed_foregrounds)
 ```
+## Download embeddings on Colab:
+
+After you change directory to '/source' in google colab run the current cell,
+this cell downloads the files into their folders:
+
+```
+!gdown 1pJnTdw5qyitFNVC_FLfmjhNdEBk0fH0N -O ../data/back_embeds/
+!gdown 1BLHIb82kTFuSzkyEbe1f044UGojXuhV8 -O ../data/back_embeds/
+!gdown 1WrU9i5BiCckDebYAcOZu83ZL1UD9kvM2 -O ../data/back_embeds/
+```
