@@ -189,7 +189,8 @@ class Thesaurus:
         neurons_num = 5 * np.sqrt(n)
         return int(np.ceil(np.sqrt(neurons_num)))
 
-    def set_som(self, mode='load', embeddings_b=None):
+    def set_som(self, mode='load', embeddings_b=None, local_som_file=None):
+        local_som_file = self.som_file if local_som_file is None else local_som_file
 
         if mode == 'train':
 
@@ -205,10 +206,10 @@ class Thesaurus:
 
             som.train(embeddings_b, iterations, verbose=True)
 
-            with open(self.som_file, 'wb') as som_file:
+            with open(local_som_file, 'wb') as som_file:
                 pickle.dump(som, som_file)
         else:
-            model = open(self.som_file, 'rb')
+            model = open(local_som_file, 'rb')
             som = pickle.load(model)
 
         self.model = som
@@ -455,22 +456,24 @@ class Thesaurus:
 
         return processed_foregrounds
 
-    def import_background(self):
+    def import_background(self, b_tokens=None, b_embeds=None):
         background_embeds, background_words = None, None
+        b_tokens = path + 'back_tokens/' + back_tokens[self.lang] if b_tokens is None else b_tokens
+        b_embeds = path + 'back_embeds/' + back_embeds[self.lang] if b_embeds is None else b_embeds
 
-        if os.path.isfile(path + 'back_embeds/' + back_embeds[self.lang]) and os.path.isfile(path + 'back_tokens/' + back_tokens[self.lang]):
-            embeds = open(path + 'back_embeds/' + back_embeds[self.lang], 'rb')
+        if os.path.isfile(b_embeds) and os.path.isfile(b_tokens):
+            embeds = open(b_embeds, 'rb')
             background_embeds = pickle.load(embeds)
 
-            tokens = open(path + 'back_tokens/' + back_tokens[self.lang], 'rb')
+            tokens = open(b_tokens, 'rb')
             background_words = pickle.load(tokens)
-        elif os.path.isfile(path + 'back_tokens/' + back_tokens[self.lang]):
-            tokens = open(path + 'back_tokens/' + back_tokens[self.lang], 'rb')
+        elif os.path.isfile(b_tokens):
+            tokens = open(b_tokens, 'rb')
             background_words = pickle.load(tokens)
             background_embeds = []
             for token in tqdm(background_words):
                 background_embeds.append(self.embed_model.encode(token))
-            embeddings_file = open(path + 'back_embeds/' + back_embeds[self.lang], 'wb')
+            embeddings_file = open(b_embeds, 'wb')
             pickle.dump(background_embeds, embeddings_file)
         else:
             print("Didn't find background files")
