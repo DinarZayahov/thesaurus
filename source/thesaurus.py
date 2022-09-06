@@ -466,10 +466,16 @@ class Thesaurus:
             background_embeds = pickle.load(embeds)
 
             tokens = open(b_tokens, 'rb')
-            background_words = pickle.load(tokens)
+            if b_tokens.lower().endswith('.pickle'):
+                background_words = pickle.load(tokens)
+            else:
+                background_words = tokens.read()
         elif os.path.isfile(b_tokens):
             tokens = open(b_tokens, 'rb')
-            background_words = pickle.load(tokens)
+            if b_tokens.lower().endswith('.pickle'):
+                background_words = pickle.load(tokens)
+            else:
+                background_words = tokens.read()
             background_embeds = []
             for token in tqdm(background_words):
                 background_embeds.append(self.embed_model.encode(token))
